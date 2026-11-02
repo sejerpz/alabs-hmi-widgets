@@ -1,0 +1,122 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#>.
+@prefix doap: <http://usefulinc.com/ns/doap#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix ahw:  <https://github.com/sejerpz/alabs-hmi-widgets#>.
+@prefix mod:  <http://moddevices.com/ns/mod#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+
+<https://github.com/sejerpz/alabs-hmi-widgets/examples/hmi-widget-draw>
+    a lv2:Plugin, mod:UtilityPlugin;
+
+    doap:name "HMI Widget Draw";
+    doap:license "ISC";
+
+    rdfs:comment """
+A plugin for demonstration purposes on how to draw widgets on the MOD HMI display.
+
+It declares three widgets, one for each width a widget can take on the Dwarf, each with its own animation
+at 25 frames per second:
+
+- level, 1 column: four bars bouncing like a level meter, each with a falling peak
+- wave, 2 columns: an audio waveform scrolling to the left, as in an audio editor, with notes plucked at random
+- bounce, 3 columns: a ball bouncing on the bottom of the area, with a short trail
+- loop, 1 column: a recorded loop drawn round a circle, turning under a playhead fixed at twelve o'clock,
+  as on a looper; the part already played in the turn is drawn hollow
+- stars, full screen: stars flying towards you over the whole display, title and footer included, inside a
+  frame on its outermost pixels
+- bricks, full screen: Bricks, a ball-and-paddle game, and a demo of partial updates. After the first full
+  picture only what moves goes out on each frame: the ball, the paddle, the bricks hit, the score; gone bricks
+  and the old ball are cleared without sending pixels. Where the ball hits the paddle sets its angle, it gets
+  faster on every paddle hit, bricks hit in a row score more and more, and hollow bricks take two hits. The first level spells MOD.
+  MOVE moves the paddle (a knob), FIRE launches the ball and starts a new game (a footswitch): it is a plain
+  switch, every press flips it and every flip counts. The game pauses while it is not in view.
+- fill1, fill2, fill3, 1 to 3 columns: every pixel of the area lit, drawn once, to see exactly how much
+  room a widget of that width gets
+
+All of them draw 1 bit per pixel, the default when ahw:pixelFormat is not given (the "level" widget says it explicitly,
+as an example). SPEED changes how fast they move; it is not tied to any widget, and can be addressed to any actuator.
+FIRE and MOVE are the controls of the game.
+    """;
+
+    lv2:optionalFeature ahw:WidgetDraw;
+    lv2:extensionData ahw:WidgetNotification;
+
+    ahw:widget [
+        a ahw:Widget;
+        lv2:symbol "level";
+        lv2:name "Level";
+        ahw:columns 1;
+        ahw:pixelFormat ahw:Mono1;
+    ], [
+        a ahw:Widget;
+        lv2:symbol "wave";
+        lv2:name "Waveform";
+        ahw:columns 2;
+    ], [
+        a ahw:Widget;
+        lv2:symbol "bounce";
+        lv2:name "Bounce";
+        ahw:columns 3;
+    ], [
+        a ahw:Widget;
+        lv2:symbol "loop";
+        lv2:name "Loop";
+        ahw:columns 1;
+    ], [
+        a ahw:Widget;
+        lv2:symbol "stars";
+        lv2:name "Starfield";
+        ahw:fullscreen true;
+    ], [
+        a ahw:Widget;
+        lv2:symbol "bricks";
+        lv2:name "Bricks";
+        ahw:fullscreen true;
+    ], [
+        a ahw:Widget;
+        lv2:symbol "fill1";
+        lv2:name "Fill";
+        ahw:columns 1;
+    ], [
+        a ahw:Widget;
+        lv2:symbol "fill2";
+        lv2:name "Fill";
+        ahw:columns 2;
+    ], [
+        a ahw:Widget;
+        lv2:symbol "fill3";
+        lv2:name "Fill";
+        ahw:columns 3;
+    ];
+
+    lv2:minorVersion 12;
+    lv2:microVersion 0;
+
+    lv2:port [
+        a lv2:InputPort, lv2:ControlPort;
+        lv2:index 0;
+        lv2:symbol "SPEED";
+        lv2:name "Speed";
+        lv2:default 1.0;
+        lv2:minimum 0.0;
+        lv2:maximum 4.0;
+    ], [
+        a lv2:InputPort, lv2:ControlPort;
+        lv2:index 1;
+        lv2:symbol "FIRE";
+        lv2:name "Fire";
+        lv2:portProperty lv2:toggled, lv2:integer;
+        lv2:default 0;
+        lv2:minimum 0;
+        lv2:maximum 1;
+    ], [
+        a lv2:InputPort, lv2:ControlPort;
+        lv2:index 2;
+        lv2:symbol "MOVE";
+        lv2:name "Move";
+        lv2:portProperty lv2:integer;
+        lv2:default 15;
+        lv2:minimum 0;
+        lv2:maximum 30;
+    ]
+.

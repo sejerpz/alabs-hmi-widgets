@@ -1,0 +1,8 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<https://github.com/sejerpz/alabs-hmi-widgets/examples/hmi-widget-draw>
+	a lv2:Plugin ;
+	lv2:binary <hmi-widget-draw.so> ;
+	rdfs:seeAlso <hmi-widget-draw.ttl> ;
+	lv2:optionalFeature lv2:hardRTCapable .
