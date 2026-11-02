@@ -1,0 +1,119 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
+@prefix ahw:  <https://github.com/sejerpz/alabs-hmi-widgets#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+<https://github.com/sejerpz/alabs-hmi-widgets>
+    a owl:Ontology ;
+    rdfs:label "aLabs HMI Widgets" ;
+    lv2:documentation """
+<p>
+A plugin can draw on areas of the device display. It declares its widgets with ahw:widget, each with a symbol
+and a name, and implements ahw:WidgetNotification. A widget is not tied to any parameter: for each area of the
+display the user decides whether it shows the default content of the hardware control below it (e.g. the knob
+addressing) or one of the widgets of the pedalboard. The hardware control keeps working as usual either way,
+only what is drawn changes.
+</p>
+<pre class="turtle-code">
+&lt;http://example.org/plugin&gt;
+    lv2:extensionData ahw:WidgetNotification ;
+    lv2:optionalFeature ahw:WidgetDraw ;
+    ahw:widget [
+        a ahw:Widget ;
+        lv2:symbol "meter" ;
+        lv2:name "Meter" ;
+        ahw:columns 2 ;
+        ahw:pixelFormat ahw:Mono1 ;
+    ] .
+</pre>
+<p>
+How big an area is depends on the device. A widget asks for a number of contiguous columns of the display with
+ahw:columns (on the MOD Dwarf there are 3, one above each knob), or for the whole display with ahw:fullscreen.
+The plugin learns the size of the area, in pixels, when the widget is shown, and never hardcodes it.
+</p>
+<p>
+A widget only gets a handle while it is visible: the host calls widget_shown() when the area holding it comes
+into view and widget_hidden() when it goes away, and the plugin draws with draw_bitmap() of ahw:WidgetDraw
+in between. Every showing gets a new handle and the plugin redraws the whole area, so the device never has to
+keep the pixels of the areas out of view. Partial updates are fine: any rectangle of the area can be redrawn.
+</p>
+<p>
+Bitmaps are rows from top to bottom in the pixel format of the area, one of those the widget declares with
+ahw:pixelFormat, ahw:Mono1 when it declares none. Coordinates are free: the device adapts the bitmap to its display,
+the plugin needs to know nothing about the display controller.
+</p>
+<p>
+A plugin drawing widgets keeps working on hosts and devices without them: with ahw:WidgetDraw optional, it
+does not draw where the feature is missing, and is simply never shown a widget there.
+</p>
+""" .
+
+ahw:WidgetDraw
+    a lv2:Feature ;
+    rdfs:label "HMI Widget Draw" ;
+    rdfs:comment """Host provided feature that lets plugins draw their widgets on the HMI display.""" .
+
+ahw:WidgetNotification
+    a lv2:ExtensionData ;
+    rdfs:label "HMI Widget Notification" ;
+    rdfs:comment """Plugin provided interface for receiving notifications of its widgets being shown on and hidden from the HMI display.""" .
+
+ahw:Widget
+    a rdfs:Class ;
+    rdfs:label "HMI Widget" ;
+    rdfs:comment """Something a plugin draws on an area of the HMI display. It has an lv2:symbol, unique among the widgets of the plugin, and an lv2:name shown to the user.""" .
+
+ahw:widget
+    a rdf:Property , owl:ObjectProperty ;
+    rdfs:domain lv2:Plugin ;
+    rdfs:range ahw:Widget ;
+    rdfs:label "widget" ;
+    rdfs:comment """A widget the plugin can draw on the HMI display.""" .
+
+ahw:columns
+    a rdf:Property , owl:DatatypeProperty ;
+    rdfs:domain ahw:Widget ;
+    rdfs:range xsd:positiveInteger ;
+    rdfs:label "columns" ;
+    rdfs:comment """How many contiguous columns of the display the widget takes, 1 when missing. A widget is only offered where the display has that many columns.""" .
+
+ahw:fullscreen
+    a rdf:Property , owl:DatatypeProperty ;
+    rdfs:domain ahw:Widget ;
+    rdfs:range xsd:boolean ;
+    rdfs:label "full screen" ;
+    rdfs:comment """When true the widget takes the whole display, title and footer included, and ahw:columns is ignored. The hardware controls keep working, only what is drawn changes.""" .
+
+ahw:PixelFormat
+    a rdfs:Class ;
+    rdfs:label "Pixel Format" ;
+    rdfs:comment """A layout of the pixels of a bitmap, matching an ALABS_HMI_PixelFormat value in the C API.""" .
+
+ahw:pixelFormat
+    a rdf:Property , owl:ObjectProperty ;
+    rdfs:domain ahw:Widget ;
+    rdfs:range ahw:PixelFormat ;
+    rdfs:label "pixel format" ;
+    rdfs:comment """A pixel format the widget can draw in; ahw:Mono1 alone when missing. A widget is only offered on a display using one of them.""" .
+
+ahw:Mono1
+    a ahw:PixelFormat ;
+    rdfs:label "Mono 1 bit" ;
+    rdfs:comment """1 bit per pixel, a set bit is a lit pixel, the most significant bit leftmost. The format of the MOD Dwarf display.""" .
+
+ahw:Gray4
+    a ahw:PixelFormat ;
+    rdfs:label "Gray 4 bits" ;
+    rdfs:comment """4 bits per pixel, 0 is the background and 15 the brightest, the high nibble leftmost.""" .
+
+ahw:RGB565
+    a ahw:PixelFormat ;
+    rdfs:label "RGB 565" ;
+    rdfs:comment """16 bits per pixel, 5 red, 6 green, 5 blue, each pixel in big endian.""" .
+
+ahw:RGB888
+    a ahw:PixelFormat ;
+    rdfs:label "RGB 888" ;
+    rdfs:comment """24 bits per pixel, a byte each for red, green and blue in that order.""" .
