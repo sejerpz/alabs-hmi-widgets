@@ -135,6 +135,12 @@ typedef struct {
 /**
  * Interface to be implemented by plugins that declare widgets,
  * returned on extension_data() when URI is ALABS_HMI__WidgetNotification.
+ *
+ * Threading: the host calls widget_shown() and widget_hidden() from a non real-time thread, one call at a time
+ * for the same plugin instance, but possibly while run() is executing in the audio thread. The plugin
+ * synchronizes whatever it shares between them and run(), e.g. publishing the widget handle atomically after
+ * the rest of the state it goes with. Neither callback may be called concurrently with instantiate(),
+ * activate(), deactivate() or cleanup().
  */
 typedef struct {
    /**
@@ -164,7 +170,9 @@ typedef struct {
 
    /**
     * Notifies the plugin that a widget is no longer visible, e.g. because the user moved to another page.
-    * The plugin MUST NOT call ALABS_HMI_WidgetDraw::draw_bitmap with this @a widget after this point.
+    * The plugin MUST NOT start any call to ALABS_HMI_WidgetDraw::draw_bitmap with this @a widget after this
+    * call returns. A call already running in another thread when widget_hidden() is called is harmless: the host
+    * drops it.
     */
     void (*widget_hidden)(LV2_Handle handle, ALABS_HMI_Widget widget);
 
@@ -217,6 +225,10 @@ typedef struct {
      *
      * Updates, clears included, are applied in the order of the calls. The host may merge pending updates
      * before they reach the display, but never in a way that changes the final result.
+     *
+     * Threading: it may be called from any thread, run() included. The host makes it safe to call from the audio
+     * thread: it never waits for the display, it only queues the update, and calls from different threads are
+     * serialized by the host.
      *
      * @note This function must only be used with a @a widget received in
      *       ALABS_HMI_WidgetNotification::widget_shown and not yet hidden.

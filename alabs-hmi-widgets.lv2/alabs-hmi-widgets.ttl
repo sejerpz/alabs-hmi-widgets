@@ -40,6 +40,12 @@ in between. Every showing gets a new handle and the plugin redraws the whole are
 keep the pixels of the areas out of view. Partial updates are fine: any rectangle of the area can be redrawn.
 </p>
 <p>
+widget_shown() and widget_hidden() come from a non real-time thread, possibly while run() is executing, so the
+plugin synchronizes what it shares with run(). draw_bitmap() can be called from any thread, run() included: the
+host only queues the update and never waits for the display. A draw still running when its widget is hidden is
+dropped by the host; the plugin starts no new one once widget_hidden() has returned.
+</p>
+<p>
 Bitmaps are rows from top to bottom in the pixel format of the area, one of those the widget declares with
 ahw:pixelFormat, ahw:Mono1 when it declares none. Coordinates are free: the device adapts the bitmap to its display,
 the plugin needs to know nothing about the display controller.

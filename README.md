@@ -145,6 +145,18 @@ typedef struct {
   display, never changing the final result.
 - Only valid with a handle received in `widget_shown()` and not yet hidden.
 
+### Threads
+
+- `widget_shown()` and `widget_hidden()` are called from a non real-time thread, one at a time for the same
+  plugin instance, but possibly while `run()` is executing in the audio thread. They are never called
+  concurrently with `instantiate()`, `activate()`, `deactivate()` or `cleanup()`.
+- The plugin synchronizes what it shares between them and `run()`. The example publishes the widget handle
+  with an atomic store after the rest of the state of the showing, and `run()` reads it with an atomic load.
+- `draw_bitmap()` may be called from any thread, `run()` included. The host makes it safe for the audio thread:
+  it never waits for the display, it only queues the update, and serializes calls coming from different threads.
+- Once `widget_hidden()` has returned the plugin starts no new `draw_bitmap()` with that handle. A call already
+  running in another thread at that moment is harmless: the host drops it.
+
 ### Compatibility
 
 `ahw:WidgetDraw` is an optional feature. A plugin with widgets runs on every host: where the feature is missing
