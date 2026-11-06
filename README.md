@@ -269,11 +269,50 @@ it does not draw, and where widgets are not supported it is simply never shown o
   - The title band is not offered on its own for now; only `full` covers it. Areas dedicated to the title band
     may come later.
   - A device without `hmi_widget_areas` offers no widgets.
-- **mod-ui** has a *Display* dialog (Device menu) where the user picks, for each page and subpage, which area
-  shows which widget, among the widgets that fit it (closest natural size first), or leaves the default content.
-  When a widget with `ahw:suggestedPorts` is placed, the dialog lists the bindings it is about to make, with the
-  rules above, and the user confirms, changes or drops them. It tells the controller about every area of every
-  page up front, so switching pages needs no round trip, and tells mod-host only about the widgets in view.
+- **mod-ui** has a *Display* dialog (Device menu) that starts from the widgets:
+  - On one side the widgets of the pedalboard, each with where it is placed (page, subpage, area) and how many of
+    its suggested ports are bound. On the other the page and subpage in view: a drawing of the display with its
+    areas, free and taken, and below it the controls of the device with what they are bound to on that page.
+  - **Place** works on the **cells** of the drawing, the only way to pick an area: it lights up the free cells
+    that belong to an area the widget fits in, and preselects the cells of the closest one. Each tap on a cell
+    adds it to the selection or takes it out, and the selection picks the area of the descriptor with exactly
+    those cells: tapping column 1 then column 2 picks "columns 1–2". A selection that matches no area, or an area
+    too small for the widget, says so and cannot be confirmed. Each cell is a real button, so the keyboard works
+    the same way.
+  - Once the area is picked the dialog lists the suggested ports with the control each would get, worked out as
+    below from that page on, and the user changes any of them or leaves a port unbound. A port already bound is
+    shown where it is and left alone.
+  - The same widget can be placed in more than one area, each with its own handle: **Place** on a widget already
+    on the display adds a placement and never moves the others. Its row shows the first placement and how many
+    more there are. The suggested ports are offered at the first placement only, since a port takes one binding.
+  - **Assign automatically** works out the page, the area and the controls itself, and shows them the same way:
+    it proposes, the user confirms or changes. It never saves on its own.
+  - **Remove from display** takes one placement of the widget off its area; its bindings stay.
+  - **Save** applies everything at once: the bindings first, through the same path as the addressing dialog,
+    then the layout. **Cancel** leaves nothing behind. A binding that fails is reported, and the layout is saved
+    anyway.
+  - The plan is worked out in the browser, with the same compatibility rules as the addressing dialog (the
+    `modes` of each control against the type of each port). The server only gives the areas, the pages and
+    subpages, the controls in the order of the device and the widget declarations.
+
+  **Assigning automatically.** The controls form rows: on the Dwarf a row of knobs (knobs 1 to 3) for each page and
+  subpage, and a row of switches (footswitches B and C) for each page. Pages come in order; within a page the row of
+  knobs of the widget's subpage comes before the others. The suggested ports are split, keeping their order, into
+  the switch ports (toggled and trigger) and the knob ports (the others). Each group takes free, compatible,
+  contiguous controls within one row; a group longer than a row fills whole rows and the rest takes a contiguous run
+  in a following row. Switch ports go to knobs only when no switch is free on any page.
+
+  1. The widget goes to the first page with a free area it fits in, where every group of ports also finds
+     contiguous free controls on that page.
+  2. When no page has room for all of them, the widget goes to the first page with a free area it fits in, and the
+     ports take the first contiguous free controls from that page on: the page itself, then the next ones, as far
+     as needed. Earlier pages are never used.
+  3. Among the free areas of a page the one closest to the natural size wins. Ports already bound are left alone;
+     ports with no room up to the last page are listed as not bound. A widget without suggested ports just goes to
+     the closest free area it fits in, on the first page that has one.
+
+  It tells the controller about every area of every page up front, so switching pages needs no round trip, and
+  tells mod-host only about the widgets in view.
 - **mod-host** gets `hmi_widget_show <instance> <symbol> <area_id> <width> <height> <format>` and
   `hmi_widget_hide <area_id|-1>`, calls the plugin's `widget_shown()`/`widget_hidden()`, clips each
   `draw_bitmap()` to its area and forwards it through the same shared memory path labels and LEDs already use.
