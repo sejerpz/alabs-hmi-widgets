@@ -383,6 +383,13 @@ starfield, brick breaker game with suggested ports): [`examples/hmi-widget-draw`
   entries would then carry a `rect` instead of an `area`, and overlaps would be computed on the rectangles. The
   plugin side does not change: it only ever sees the size of its area.
 
+## Use of AI
+
+Parts of this project, code and documentation, may be written with the help of AI tools,
+mainly Claude by Anthropic. Every change is read and reviewed by a human developer before it
+is committed, and the maintainer is responsible for it like for any other code. AI tools are
+not credited as authors in the commit history.
+
 ## License
 
 ISC, see `LICENSE`.
