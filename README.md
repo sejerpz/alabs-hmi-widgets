@@ -11,10 +11,16 @@ The bundle `alabs-hmi-widgets.lv2` holds the specification (`alabs-hmi-widgets.t
 ## Overview
 
 A plugin declares **widgets** in its TTL and implements the **`ahw:WidgetNotification`** interface. A widget is
-not tied to any parameter or addressing: for each area of the display the user decides, page by page and subpage
-by subpage, whether it shows the default content of the hardware control below it (e.g. the knob addressing) or
-one of the widgets of the pedalboard. The hardware control keeps working as usual either way, only what is
-drawn changes.
+not tied to any parameter: for each area of the display the user decides, page by page and subpage by subpage,
+whether it shows the default content of the device (e.g. the knob addressing) or one of the widgets of the
+pedalboard. The hardware controls keep working as usual either way, only what is drawn changes.
+
+Which areas a display has is up to the device. A widget only says how much room it needs and how much it would
+like, in pixels, and the host offers it where it fits.
+
+A widget may also suggest which of its ports it would like bound to the controls of the device. The host offers
+the bindings to the user when the widget is placed; where the widget sits and what the controls are bound to stay
+independent choices of the user.
 
 While a widget is visible the host gives the plugin a handle, and the plugin draws with **`draw_bitmap()`** of
 the **`ahw:WidgetDraw`** feature. Bitmaps use a plain pixel format (1 bit per pixel, rows top to bottom on the
@@ -34,13 +40,18 @@ about it.
         a ahw:Widget ;
         lv2:symbol "meter" ;
         lv2:name "Meter" ;
-        ahw:columns 1 ;
+        ahw:minWidth 16 ;
+        ahw:minHeight 10 ;
+        ahw:naturalWidth 40 ;
+        ahw:naturalHeight 37 ;
         ahw:pixelFormat ahw:Mono1 ;
     ] , [
         a ahw:Widget ;
-        lv2:symbol "scope" ;
-        lv2:name "Scope" ;
-        ahw:fullscreen true ;
+        lv2:symbol "stop" ;
+        lv2:name "Stop all" ;
+        ahw:minWidth 32 ;
+        ahw:minHeight 8 ;
+        ahw:suggestedPorts ( "stop_all" ) ;
     ] .
 ```
 
@@ -50,13 +61,73 @@ about it.
 | `ahw:WidgetNotification` | `lv2:ExtensionData` | Plugin interface notified when its widgets are shown and hidden. |
 | `ahw:Widget` | class | Something the plugin draws on an area of the display. Has an `lv2:symbol`, unique among the widgets of the plugin, and an `lv2:name` shown to the user. |
 | `ahw:widget` | property of `lv2:Plugin` | A widget the plugin can draw. |
-| `ahw:columns` | `xsd:positiveInteger` | How many contiguous columns of the display the widget takes, 1 when missing. Only offered where the display has that many. |
-| `ahw:fullscreen` | `xsd:boolean` | The widget takes the whole display, title and footer included; `ahw:columns` is ignored. |
+| `ahw:minWidth`, `ahw:minHeight` | `xsd:positiveInteger` | The smallest area, in pixels, the widget can draw in. Any size when missing. |
+| `ahw:naturalWidth`, `ahw:naturalHeight` | `xsd:positiveInteger` | The size, in pixels, the widget looks best at. The minimum when missing or smaller. |
+| `ahw:suggestedPorts` | `rdf:List` of strings | The `lv2:symbol` of the input control ports the widget would like bound to the controls of the device, in order. |
 | `ahw:pixelFormat` | `ahw:PixelFormat` | A pixel format the widget can draw in, `ahw:Mono1` alone when missing. Only offered on a display using one of them. |
 | `ahw:Mono1`, `ahw:Gray4`, `ahw:RGB565`, `ahw:RGB888` | `ahw:PixelFormat` | The pixel formats, matching `ALABS_HMI_PixelFormat`. |
 
-The size of an area depends on the device. A widget asks for columns or for the full screen and learns its size
-in pixels when it is shown; it never hardcodes it.
+### Size
+
+- The host only offers a widget in areas at least `ahw:minWidth` wide and `ahw:minHeight` high. A missing minimum
+  counts as 1 pixel: the widget fits any area.
+- The natural size is a hint, never a limit: the host uses it to order the areas it offers, closest first, and
+  may preselect one. It never excludes an area for being bigger: a small icon in a big area is the user's choice.
+- The closest area is the one with the smallest `|width − naturalWidth| + |height − naturalHeight|`, ties going
+  to the area the device lists first. Since a missing natural size is the minimum, and a missing minimum is 1
+  pixel, a widget that declares neither gets the smallest area first.
+- The plugin draws in **any** area at least as big as its minimum, and learns its size in `widget_shown()`.
+  In an area bigger than its natural size it decides itself whether to center, scale or fill. It never
+  hardcodes a size.
+- Sizes are in pixels of the device display: a widget on a denser display simply gets bigger areas.
+- The sizes of the areas of the MOD Dwarf, to copy into `ahw:minWidth`, `ahw:minHeight`, `ahw:naturalWidth` and
+  `ahw:naturalHeight`:
+
+  | Area on the MOD Dwarf | Width × height (px) |
+  |---|---|
+  | One column, above a knob | 40 × 37 |
+  | Two columns | 82 × 37 |
+  | Three columns | 124 × 37 |
+  | One footer, above footswitch B or C | 51 × 10 (footer B is 53 wide) |
+  | Both footers | 104 × 10 |
+  | Full screen | 128 × 64 |
+
+  A widget that fits one footer on the Dwarf declares at most 51 × 10 as its minimum, so that it fits footer C too.
+
+### Suggested ports and bindings
+
+`ahw:suggestedPorts` answers a simple worry: a widget that draws "STOP ALL" promises something, and it is easier
+to keep the promise if placing the widget also offers to bind the port. It is a suggestion, and a host may ignore
+it. A host that follows it:
+
+- applies it only when the user places the widget, in the host's layout UI, never when a pedalboard is loaded;
+- shows the user what it is about to bind, and the user can change or refuse it;
+- creates ordinary bindings, independent from the widget: they stay when the widget is removed, and removing a
+  binding leaves the widget where it is;
+- never replaces a control already in use and never touches a port already bound;
+- uses the controls nearest to the widget first: those of its page (and of its subpage, where controls have
+  subpages), then those of the following pages, never going back to earlier ones;
+- binds the ports in the order they are listed, to contiguous free controls in the order the device presents
+  them, and respects controls that cannot take a binding (e.g. a footswitch that belongs to a group in use);
+- binds toggled and trigger ports to switches, the others to knobs, and toggled and trigger ports to knobs only
+  when no switch is free;
+- binds what it can when there are not enough free controls, and tells the user which ports are left.
+
+Where a widget sits and what the controls are bound to are **independent choices of the user**. The host does
+not promise that a widget is above the controls bound to its ports: it is perfectly fine to place a widget above a
+control bound to another plugin, or above no control at all.
+
+A widget that shows the state of its ports learns whether they are bound from the MOD HMI extension
+(`http://moddevices.com/ns/hmi`): `addressed()` and `unaddressed()` of `LV2_HMI_PluginNotification` tell it, and the
+functions of `LV2_HMI_WidgetControl` (`set_label()`, `set_led_with_blink()`, `set_value()`, ...) act on the real
+control without the plugin knowing which one it is. Since it does not know where that control is, a widget should
+draw a state ("STOP ALL", "not bound") rather than a direction ("press here"). Known limits:
+
+- `addressed()` is only called for HMI bindings: MIDI and Control Chain do not call it.
+- Where a widget covers the default content of a control, what `set_label()`, `set_value()` and `set_unit()`
+  change is not seen there: the device keeps it and shows it again when the area goes back to the default
+  content, and wherever else it shows the control (e.g. overlays). LEDs are not on the display and always work.
+- `set_label()` replaces the label the user gave to the binding.
 
 ## C API
 
@@ -165,22 +236,44 @@ it does not draw, and where widgets are not supported it is simply never shown o
 ## Reference implementation (MOD Dwarf)
 
 - **Geometry** comes from the hardware descriptor, extended with drop-in files merged by mod-ui
-  (`/etc/mod-hardware-descriptor.d/*.json`), never hardcoded:
+  (`/etc/mod-hardware-descriptor.d/*.json`), never hardcoded. It lists every area the device offers, the merged
+  ones included, each with its rectangle in display coordinates and the **cells** it takes:
 
   ```json
   {
-      "hmi_widget_columns": [[2, 12, 40, 37], [44, 12, 40, 37], [86, 12, 40, 37]],
-      "hmi_widget_fullscreen": [0, 0, 128, 64],
+      "hmi_widget_areas": {
+          "col1":    { "rect": [2, 12, 40, 37],   "cells": ["col1"] },
+          "col2":    { "rect": [44, 12, 40, 37],  "cells": ["col2"] },
+          "col3":    { "rect": [86, 12, 40, 37],  "cells": ["col3"] },
+          "col1-2":  { "rect": [2, 12, 82, 37],   "cells": ["col1", "col2"] },
+          "col2-3":  { "rect": [44, 12, 82, 37],  "cells": ["col2", "col3"] },
+          "col1-3":  { "rect": [2, 12, 124, 37],  "cells": ["col1", "col2", "col3"] },
+          "footB":   { "rect": [24, 54, 53, 10],  "cells": ["footB"], "subpages": false },
+          "footC":   { "rect": [77, 54, 51, 10],  "cells": ["footC"], "subpages": false },
+          "footB-C": { "rect": [24, 54, 104, 10], "cells": ["footB", "footC"], "subpages": false },
+          "full":    { "rect": [0, 0, 128, 64],
+                       "cells": ["title", "col1", "col2", "col3", "index", "footB", "footC"] }
+      },
       "hmi_widget_pixel_format": "mono1"
   }
   ```
 
-  Three columns of 40×37 pixels above the knobs, 2 pixels apart; a widget on 2 or 3 columns gets one area
-  spanning them (82 and 124 pixels wide). The full screen area is the whole 128×64 display. A device without
-  these keys offers no widgets.
-- **mod-ui** has a *Display* dialog (Device menu) where the user picks, for each page and subpage, a widget or
-  the knob for each column, or one full screen widget. It tells the controller about every area of every page up
-  front, so switching pages needs no round trip, and tells mod-host only about the widgets in view.
+  - Three columns of 40×37 pixels above the knobs, 2 pixels apart, alone or merged (82 and 124 pixels wide);
+    the footers of footswitches B and C, alone or together; the whole 128×64 display.
+  - Two areas sharing a cell exclude each other on the same page and subpage. Which areas can be merged is
+    decided by whoever writes the descriptor, by listing them: there is no geometry to compute, and odd shapes
+    simply do not exist.
+  - `"subpages": false` marks an area whose content does not change with the subpage, like the footers of the
+    footswitches: a widget placed there is shown on every subpage of its page, and excludes, on every subpage,
+    the areas sharing its cells. Missing means one placement per subpage.
+  - The title band is not offered on its own for now; only `full` covers it. Areas dedicated to the title band
+    may come later.
+  - A device without `hmi_widget_areas` offers no widgets.
+- **mod-ui** has a *Display* dialog (Device menu) where the user picks, for each page and subpage, which area
+  shows which widget, among the widgets that fit it (closest natural size first), or leaves the default content.
+  When a widget with `ahw:suggestedPorts` is placed, the dialog lists the bindings it is about to make, with the
+  rules above, and the user confirms, changes or drops them. It tells the controller about every area of every
+  page up front, so switching pages needs no round trip, and tells mod-host only about the widgets in view.
 - **mod-host** gets `hmi_widget_show <instance> <symbol> <area_id> <width> <height> <format>` and
   `hmi_widget_hide <area_id|-1>`, calls the plugin's `widget_shown()`/`widget_hidden()`, clips each
   `draw_bitmap()` to its area and forwards it through the same shared memory path labels and LEDs already use.
@@ -199,11 +292,13 @@ saves which widget each area shows next to the pedalboard, as `hmi-widgets.json`
 ```json
 {
     "format": "https://github.com/sejerpz/alabs-hmi-widgets#WidgetLayout",
-    "version": 1,
+    "version": 2,
     "widgets": [
-        { "page": 0, "subpage": 0, "column": 0, "columns": 1,
+        { "page": 0, "subpage": 0, "area": "col1",
           "instance": "/graph/meter_1", "symbol": "meter" },
-        { "page": 0, "subpage": 2, "column": 0, "columns": 3, "fullscreen": true,
+        { "page": 0, "area": "footC",
+          "instance": "/graph/looper_1", "symbol": "stop" },
+        { "page": 0, "subpage": 2, "area": "full",
           "instance": "/graph/scope_1", "symbol": "scope" }
     ]
 }
@@ -212,10 +307,14 @@ saves which widget each area shows next to the pedalboard, as `hmi-widgets.json`
 - `format` identifies what the file holds and `version` its revision, so a later mod-ui can tell what it reads and
   migrate it. The version is bumped only when an older mod-ui would misread the layout; fields it can skip do not
   change it.
+- `area` names an area of the hardware descriptor. `subpage` is left out for areas with `"subpages": false`.
+- Version 1, with `column`, `columns` and `fullscreen`, is not read: it was never released.
 - mod-ui, finding a newer version than it knows, does not use it, and writes it back unchanged when the
   pedalboard is saved, unless the user places widgets in the meantime.
-- Entries that no longer fit (a plugin removed, a widget no longer declared, a column out of range, an overlap)
-  are dropped when the layout is loaded.
+- Entries that no longer fit (a plugin removed, a widget no longer declared, an area the device does not have or
+  that is now too small for the widget, an overlap) are dropped when the layout is loaded.
+- The bindings made from `ahw:suggestedPorts` are ordinary bindings, saved with the others: the layout does not
+  record them.
 - No new RDF predicate is written into the pedalboard TTL.
 
 ### Measured on a Dwarf
@@ -226,8 +325,8 @@ saves which widget each area shows next to the pedalboard, as `hmi-widgets.json`
 | Clearing a whole area | 1.3 ms, about one round trip |
 | Partial updates | a few bytes per frame for a moving object (bouncing ball / brick breaker demo) |
 
-Example plugin with 1, 2, 3 column and full screen widgets (meter, waveform, bouncing ball, looper, starfield,
-brick breaker game): [`examples/hmi-widget-draw`](examples/hmi-widget-draw).
+Example plugin with widgets of many sizes, from a footer to the full screen (meter, waveform, bouncing ball, looper,
+starfield, brick breaker game with suggested ports): [`examples/hmi-widget-draw`](examples/hmi-widget-draw).
 
 ## Open points
 
@@ -237,6 +336,13 @@ brick breaker game): [`examples/hmi-widget-draw`](examples/hmi-widget-draw).
 - **Keeping pixels out of view.** The firmware keeps pixels only for the areas in view, and plugins redraw on
   every showing. Caching the screens reachable in one step (other subpages, next and previous page) would avoid
   the redraw, but needs the free RAM of the controller measured first.
+- **Grouped footswitches.** When footswitches B and C are grouped on a page, the firmware draws one footer across
+  both: a widget on `footB` or `footC` alone covers part of it, and the firmware skips the rest. To be checked on
+  a Dwarf, and possibly offered only as `footB-C` on those pages.
+- **Freeform layout.** The areas of the descriptor are a list. A later revision can add a canvas, e.g.
+  `"hmi_widget_canvas": { "rect": [0, 12, 128, 52], "grid": 1 }`, where the user draws any rectangle: layout
+  entries would then carry a `rect` instead of an `area`, and overlaps would be computed on the rectangles. The
+  plugin side does not change: it only ever sees the size of its area.
 
 ## License
 

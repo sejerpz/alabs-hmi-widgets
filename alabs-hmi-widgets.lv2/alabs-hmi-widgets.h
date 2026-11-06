@@ -35,8 +35,11 @@
 #define ALABS_HMI__WidgetNotification ALABS_HMI_PREFIX "WidgetNotification"
 #define ALABS_HMI__Widget             ALABS_HMI_PREFIX "Widget"
 #define ALABS_HMI__widget             ALABS_HMI_PREFIX "widget"
-#define ALABS_HMI__columns            ALABS_HMI_PREFIX "columns"
-#define ALABS_HMI__fullscreen         ALABS_HMI_PREFIX "fullscreen"
+#define ALABS_HMI__minWidth           ALABS_HMI_PREFIX "minWidth"
+#define ALABS_HMI__minHeight          ALABS_HMI_PREFIX "minHeight"
+#define ALABS_HMI__naturalWidth       ALABS_HMI_PREFIX "naturalWidth"
+#define ALABS_HMI__naturalHeight      ALABS_HMI_PREFIX "naturalHeight"
+#define ALABS_HMI__suggestedPorts     ALABS_HMI_PREFIX "suggestedPorts"
 #define ALABS_HMI__pixelFormat        ALABS_HMI_PREFIX "pixelFormat"
 #define ALABS_HMI__Mono1              ALABS_HMI_PREFIX "Mono1"
 #define ALABS_HMI__Gray4              ALABS_HMI_PREFIX "Gray4"
@@ -59,14 +62,17 @@ extern "C" {
  *        a ahw:Widget ;
  *        lv2:symbol "meter" ;
  *        lv2:name "Meter" ;
- *        ahw:columns 2 ;
+ *        ahw:minWidth 32 ;
+ *        ahw:minHeight 10 ;
+ *        ahw:naturalWidth 40 ;
+ *        ahw:naturalHeight 37 ;
  *    ] .
  *
- *  ahw:columns is how many contiguous columns of the display the widget takes, 1 when missing; on the Dwarf
- *  there are 3, one above each knob. The area handed to the plugin is that many columns wide.
- *
- *  ahw:fullscreen true makes the widget take the whole display instead, title and footer included, and
- *  ahw:columns is then ignored. The hardware controls keep working; only what is drawn changes.
+ *  The areas of the display are up to the device. ahw:minWidth and ahw:minHeight are the smallest area, in pixels,
+ *  the widget can draw in: the host only offers it in areas at least that big, in any area when missing.
+ *  ahw:naturalWidth and ahw:naturalHeight are the size the widget looks best at, the minimum when missing: a hint
+ *  the host uses to order and preselect areas, never to exclude one. The plugin draws in any area at least as big
+ *  as its minimum and learns its size in ALABS_HMI_WidgetNotification::widget_shown.
  *
  *  ahw:pixelFormat lists the pixel formats the widget can draw in, ahw:Mono1 alone when missing:
  *
@@ -75,9 +81,14 @@ extern "C" {
  *  A widget is only offered on a device whose display uses one of them, and is told which one in
  *  ALABS_HMI_WidgetNotification::widget_shown.
  *
- *  The user decides, for each area of the display, whether it shows the default content of the
- *  hardware control below it (e.g. the knob addressing) or one of the widgets of the pedalboard.
- *  The hardware control keeps working as usual either way, only what is drawn changes.
+ *  ahw:suggestedPorts is an ordered list of the symbols of the ports the widget would like bound to the controls
+ *  of the device, a suggestion the host offers to the user when the widget is placed:
+ *
+ *        ahw:suggestedPorts ( "stop_all" "level" ) ;
+ *
+ *  The user decides, for each area of the display, whether it shows the default content of the device (e.g. the
+ *  knob addressing) or one of the widgets of the pedalboard, and, separately, what the controls are bound to.
+ *  The hardware controls keep working as usual either way, only what is drawn changes.
  */
 typedef void* ALABS_HMI_Widget;
 
@@ -121,8 +132,9 @@ typedef struct {
     size_t size;
 
    /**
-    *  Size of the area in pixels; the plugin draws in 0..width-1, 0..height-1, with the origin at the top-left
-    *  corner of the area. Where the area sits on the display is up to the device.
+    *  Size of the area in pixels, never smaller than the ahw:minWidth and ahw:minHeight of the widget; the plugin
+    *  draws in 0..width-1, 0..height-1, with the origin at the top-left corner of the area. Where the area sits on
+    *  the display is up to the device.
     */
     uint16_t width, height;
 

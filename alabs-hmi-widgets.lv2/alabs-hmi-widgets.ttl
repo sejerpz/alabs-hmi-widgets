@@ -12,9 +12,8 @@
 <p>
 A plugin can draw on areas of the device display. It declares its widgets with ahw:widget, each with a symbol
 and a name, and implements ahw:WidgetNotification. A widget is not tied to any parameter: for each area of the
-display the user decides whether it shows the default content of the hardware control below it (e.g. the knob
-addressing) or one of the widgets of the pedalboard. The hardware control keeps working as usual either way,
-only what is drawn changes.
+display the user decides whether it shows the default content of the device (e.g. the knob addressing) or one of
+the widgets of the pedalboard. The hardware controls keep working as usual either way, only what is drawn changes.
 </p>
 <pre class="turtle-code">
 &lt;http://example.org/plugin&gt;
@@ -22,16 +21,26 @@ only what is drawn changes.
     lv2:optionalFeature ahw:WidgetDraw ;
     ahw:widget [
         a ahw:Widget ;
-        lv2:symbol "meter" ;
-        lv2:name "Meter" ;
-        ahw:columns 2 ;
-        ahw:pixelFormat ahw:Mono1 ;
+        lv2:symbol "stop" ;
+        lv2:name "Stop all" ;
+        ahw:minWidth 32 ;
+        ahw:minHeight 8 ;
+        ahw:naturalWidth 48 ;
+        ahw:naturalHeight 10 ;
+        ahw:suggestedPorts ( "stop_all" ) ;
     ] .
 </pre>
 <p>
-How big an area is depends on the device. A widget asks for a number of contiguous columns of the display with
-ahw:columns (on the MOD Dwarf there are 3, one above each knob), or for the whole display with ahw:fullscreen.
-The plugin learns the size of the area, in pixels, when the widget is shown, and never hardcodes it.
+Which areas a display has, and how big they are, is up to the device. A widget declares the smallest area it can
+draw in with ahw:minWidth and ahw:minHeight, and the size it looks best at with ahw:naturalWidth and
+ahw:naturalHeight, all in pixels. The host only offers it in areas at least as big as the minimum; the natural
+size only orders and preselects the areas offered, it never excludes one. The plugin learns the size of the area
+when the widget is shown, draws in any area at least as big as its minimum, and never hardcodes a size.
+</p>
+<p>
+ahw:suggestedPorts lists, in order, the ports the widget would like bound to the controls of the device. It is
+a suggestion for the host, applied only when the user places the widget and always shown to the user, who can
+change or refuse it. Where a widget sits and what the controls are bound to stay independent choices of the user.
 </p>
 <p>
 A widget only gets a handle while it is visible: the host calls widget_shown() when the area holding it comes
@@ -78,19 +87,40 @@ ahw:widget
     rdfs:label "widget" ;
     rdfs:comment """A widget the plugin can draw on the HMI display.""" .
 
-ahw:columns
+ahw:minWidth
     a rdf:Property , owl:DatatypeProperty ;
     rdfs:domain ahw:Widget ;
     rdfs:range xsd:positiveInteger ;
-    rdfs:label "columns" ;
-    rdfs:comment """How many contiguous columns of the display the widget takes, 1 when missing. A widget is only offered where the display has that many columns.""" .
+    rdfs:label "minimum width" ;
+    rdfs:comment """The narrowest area, in pixels, the widget can draw in. The host only offers the widget in areas at least this wide; any width when missing.""" .
 
-ahw:fullscreen
+ahw:minHeight
     a rdf:Property , owl:DatatypeProperty ;
     rdfs:domain ahw:Widget ;
-    rdfs:range xsd:boolean ;
-    rdfs:label "full screen" ;
-    rdfs:comment """When true the widget takes the whole display, title and footer included, and ahw:columns is ignored. The hardware controls keep working, only what is drawn changes.""" .
+    rdfs:range xsd:positiveInteger ;
+    rdfs:label "minimum height" ;
+    rdfs:comment """The lowest area, in pixels, the widget can draw in. The host only offers the widget in areas at least this high; any height when missing.""" .
+
+ahw:naturalWidth
+    a rdf:Property , owl:DatatypeProperty ;
+    rdfs:domain ahw:Widget ;
+    rdfs:range xsd:positiveInteger ;
+    rdfs:label "natural width" ;
+    rdfs:comment """The width, in pixels, the widget looks best at. A hint: the host uses it to order and preselect the areas it offers, never to exclude one. ahw:minWidth when missing or smaller.""" .
+
+ahw:naturalHeight
+    a rdf:Property , owl:DatatypeProperty ;
+    rdfs:domain ahw:Widget ;
+    rdfs:range xsd:positiveInteger ;
+    rdfs:label "natural height" ;
+    rdfs:comment """The height, in pixels, the widget looks best at. A hint: the host uses it to order and preselect the areas it offers, never to exclude one. ahw:minHeight when missing or smaller.""" .
+
+ahw:suggestedPorts
+    a rdf:Property , owl:ObjectProperty ;
+    rdfs:domain ahw:Widget ;
+    rdfs:range rdf:List ;
+    rdfs:label "suggested ports" ;
+    rdfs:comment """An ordered list of lv2:symbol strings of input control ports of the plugin, the ports the widget would like bound to the controls of the device. A suggestion the host may ignore: applied only when the user places the widget, shown to the user, who can change or refuse it, and never replacing a binding already made.""" .
 
 ahw:PixelFormat
     a rdfs:Class ;
