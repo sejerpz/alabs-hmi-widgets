@@ -14,24 +14,26 @@
     rdfs:comment """
 A plugin for demonstration purposes on how to draw widgets on the MOD HMI display.
 
-It declares three widgets, one for each width a widget can take on the Dwarf, each with its own animation
-at 25 frames per second:
+It declares widgets of many sizes, each with the smallest area it can draw in and the size it looks best at,
+and its own animation at 25 frames per second. The natural sizes match the areas of the Dwarf:
 
-- level, 1 column: four bars bouncing like a level meter, each with a falling peak
-- wave, 2 columns: an audio waveform scrolling to the left, as in an audio editor, with notes plucked at random
-- bounce, 3 columns: a ball bouncing on the bottom of the area, with a short trail
-- loop, 1 column: a recorded loop drawn round a circle, turning under a playhead fixed at twelve o'clock,
+- level, natural 1 column: four bars bouncing like a level meter, each with a falling peak; small enough
+  for a footer too
+- wave, natural 2 columns: an audio waveform scrolling to the left, as in an audio editor, with notes plucked
+  at random
+- bounce, natural 3 columns: a ball bouncing on the bottom of the area, with a short trail
+- loop, natural 1 column: a recorded loop drawn round a circle, turning under a playhead fixed at twelve o'clock,
   as on a looper; the part already played in the turn is drawn hollow
-- stars, full screen: stars flying towards you over the whole display, title and footer included, inside a
-  frame on its outermost pixels
-- bricks, full screen: Bricks, a ball-and-paddle game, and a demo of partial updates. After the first full
+- stars, natural full screen: stars flying towards you, inside a frame on the outermost pixels of the area
+- bricks, full screen only: Bricks, a ball-and-paddle game, and a demo of partial updates. After the first full
   picture only what moves goes out on each frame: the ball, the paddle, the bricks hit, the score; gone bricks
   and the old ball are cleared without sending pixels. Where the ball hits the paddle sets its angle, it gets
   faster on every paddle hit, bricks hit in a row score more and more, and hollow bricks take two hits. The first level spells MOD.
   MOVE moves the paddle (a knob), FIRE launches the ball and starts a new game (a footswitch): it is a plain
-  switch, every press flips it and every flip counts. The game pauses while it is not in view.
-- fill1, fill2, fill3, 1 to 3 columns: every pixel of the area lit, drawn once, to see exactly how much
-  room a widget of that width gets
+  switch, every press flips it and every flip counts. The game pauses while it is not in view. It suggests FIRE
+  and MOVE as its ports, so placing it offers to bind them.
+- fill, any size: every pixel of the area lit, drawn once, to see exactly how much room an area gives; place it
+  in several areas at once to compare them
 
 All of them draw 1 bit per pixel, the default when ahw:pixelFormat is not given (the "level" widget says it explicitly,
 as an example). SPEED changes how fast they move; it is not tied to any widget, and can be addressed to any actuator.
@@ -45,48 +47,54 @@ FIRE and MOVE are the controls of the game.
         a ahw:Widget;
         lv2:symbol "level";
         lv2:name "Level";
-        ahw:columns 1;
+        ahw:minWidth 16;
+        ahw:minHeight 8;
+        ahw:naturalWidth 40;
+        ahw:naturalHeight 37;
         ahw:pixelFormat ahw:Mono1;
     ], [
         a ahw:Widget;
         lv2:symbol "wave";
         lv2:name "Waveform";
-        ahw:columns 2;
+        ahw:minWidth 24;
+        ahw:minHeight 10;
+        ahw:naturalWidth 82;
+        ahw:naturalHeight 37;
     ], [
         a ahw:Widget;
         lv2:symbol "bounce";
         lv2:name "Bounce";
-        ahw:columns 3;
+        ahw:minWidth 16;
+        ahw:minHeight 10;
+        ahw:naturalWidth 124;
+        ahw:naturalHeight 37;
     ], [
         a ahw:Widget;
         lv2:symbol "loop";
         lv2:name "Loop";
-        ahw:columns 1;
+        ahw:minWidth 20;
+        ahw:minHeight 20;
+        ahw:naturalWidth 40;
+        ahw:naturalHeight 37;
     ], [
         a ahw:Widget;
         lv2:symbol "stars";
         lv2:name "Starfield";
-        ahw:fullscreen true;
+        ahw:minWidth 32;
+        ahw:minHeight 32;
+        ahw:naturalWidth 128;
+        ahw:naturalHeight 64;
     ], [
         a ahw:Widget;
         lv2:symbol "bricks";
         lv2:name "Bricks";
-        ahw:fullscreen true;
+        ahw:minWidth 128;
+        ahw:minHeight 64;
+        ahw:suggestedPorts ( "FIRE" "MOVE" );
     ], [
         a ahw:Widget;
-        lv2:symbol "fill1";
+        lv2:symbol "fill";
         lv2:name "Fill";
-        ahw:columns 1;
-    ], [
-        a ahw:Widget;
-        lv2:symbol "fill2";
-        lv2:name "Fill";
-        ahw:columns 2;
-    ], [
-        a ahw:Widget;
-        lv2:symbol "fill3";
-        lv2:name "Fill";
-        ahw:columns 3;
     ];
 
     lv2:minorVersion 12;

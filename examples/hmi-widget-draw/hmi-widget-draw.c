@@ -68,16 +68,16 @@ typedef enum {
     PARAMETER_COUNT
 } Parameters;
 
-// the widgets declared in the TTL, by number of columns
+// the widgets declared in the TTL, by the area they look best in
 typedef enum {
     WIDGET_NONE = 0,
-    WIDGET_LEVEL,   // 1 column: bars bouncing like a level meter, with a falling peak
-    WIDGET_WAVE,    // 2 columns: an audio waveform scrolling to the left, notes plucked at random
-    WIDGET_BOUNCE,  // 3 columns: a ball bouncing on the bottom of the area, with a short trail
-    WIDGET_FILL,    // 1, 2 and 3 columns: every pixel of the area lit, to see exactly how much room there is
-    WIDGET_LOOP,    // 1 column: a recorded loop drawn round a circle, turning under a fixed playhead
-    WIDGET_STARS,   // full screen: stars flying towards you, inside a frame on the very edge of the display
-    WIDGET_GAME,    // full screen: Bricks, a ball-and-paddle game drawn with partial updates
+    WIDGET_LEVEL,   // a column, or a footer: bars bouncing like a level meter, with a falling peak
+    WIDGET_WAVE,    // two columns: an audio waveform scrolling to the left, notes plucked at random
+    WIDGET_BOUNCE,  // three columns: a ball bouncing on the bottom of the area, with a short trail
+    WIDGET_FILL,    // any area: every pixel of the area lit, to see exactly how much room there is
+    WIDGET_LOOP,    // a column: a recorded loop drawn round a circle, turning under a fixed playhead
+    WIDGET_STARS,   // the full screen: stars flying towards you, inside a frame on the very edge of the area
+    WIDGET_GAME,    // the full screen only: Bricks, a ball-and-paddle game drawn with partial updates
 } WidgetKind;
 
 typedef struct {
@@ -997,7 +997,7 @@ widget_shown(LV2_Handle handle, const char* symbol, ALABS_HMI_Widget widget, con
         kind = WIDGET_WAVE;
     else if (!strcmp(symbol, "bounce"))
         kind = WIDGET_BOUNCE;
-    else if (!strcmp(symbol, "fill1") || !strcmp(symbol, "fill2") || !strcmp(symbol, "fill3"))
+    else if (!strcmp(symbol, "fill"))
         kind = WIDGET_FILL;
     else if (!strcmp(symbol, "loop"))
         kind = WIDGET_LOOP;
