@@ -237,27 +237,33 @@ it does not draw, and where widgets are not supported it is simply never shown o
 
 - **Geometry** comes from the hardware descriptor, extended with drop-in files merged by mod-ui
   (`/etc/mod-hardware-descriptor.d/*.json`), never hardcoded. It lists every area the device offers, the merged
-  ones included, each with its rectangle in display coordinates and the **cells** it takes:
+  ones included, each with an `id`, a `name` shown to the user, its rectangle in display coordinates and the
+  **cells** it takes:
 
   ```json
   {
-      "hmi_widget_areas": {
-          "col1":    { "rect": [2, 12, 40, 37],   "cells": ["col1"] },
-          "col2":    { "rect": [44, 12, 40, 37],  "cells": ["col2"] },
-          "col3":    { "rect": [86, 12, 40, 37],  "cells": ["col3"] },
-          "col1-2":  { "rect": [2, 12, 82, 37],   "cells": ["col1", "col2"] },
-          "col2-3":  { "rect": [44, 12, 82, 37],  "cells": ["col2", "col3"] },
-          "col1-3":  { "rect": [2, 12, 124, 37],  "cells": ["col1", "col2", "col3"] },
-          "footB":   { "rect": [24, 54, 53, 10],  "cells": ["footB"], "subpages": false },
-          "footC":   { "rect": [77, 54, 51, 10],  "cells": ["footC"], "subpages": false },
-          "footB-C": { "rect": [24, 54, 104, 10], "cells": ["footB", "footC"], "subpages": false },
-          "full":    { "rect": [0, 0, 128, 64],
-                       "cells": ["title", "col1", "col2", "col3", "index", "footB", "footC"] }
-      },
+      "hmi_widget_areas": [
+          { "id": "col1",    "name": "Column 1",    "rect": [2, 12, 40, 37],   "cells": ["col1"] },
+          { "id": "col2",    "name": "Column 2",    "rect": [44, 12, 40, 37],  "cells": ["col2"] },
+          { "id": "col3",    "name": "Column 3",    "rect": [86, 12, 40, 37],  "cells": ["col3"] },
+          { "id": "col1-2",  "name": "Columns 1–2", "rect": [2, 12, 82, 37],   "cells": ["col1", "col2"] },
+          { "id": "col2-3",  "name": "Columns 2–3", "rect": [44, 12, 82, 37],  "cells": ["col2", "col3"] },
+          { "id": "col1-3",  "name": "Columns 1–3", "rect": [2, 12, 124, 37],  "cells": ["col1", "col2", "col3"] },
+          { "id": "footB",   "name": "Footer B",    "rect": [24, 54, 53, 10],  "cells": ["footB"], "subpages": false },
+          { "id": "footC",   "name": "Footer C",    "rect": [77, 54, 51, 10],  "cells": ["footC"], "subpages": false },
+          { "id": "footB-C", "name": "Footers B–C", "rect": [24, 54, 104, 10], "cells": ["footB", "footC"],
+            "subpages": false },
+          { "id": "full",    "name": "Full screen", "rect": [0, 0, 128, 64],
+            "cells": ["title", "col1", "col2", "col3", "index", "footB", "footC"] }
+      ],
       "hmi_widget_pixel_format": "mono1"
   }
   ```
 
+  - The areas are a list because their order matters: it breaks ties between areas equally close to a widget's
+    natural size. mod-ui also reads an object keyed by id, ordered by id, as a JSON object has no order of its own.
+  - A cell drawn in the Display dialog is one with an area of its own, like `col1` or `footB`; a cell only a bigger
+    area takes, like `title` under `full`, cannot be picked alone. `name` falls back to the `id`.
   - Three columns of 40×37 pixels above the knobs, 2 pixels apart, alone or merged (82 and 124 pixels wide);
     the footers of footswitches B and C, alone or together; the whole 128×64 display.
   - Two areas sharing a cell exclude each other on the same page and subpage. Which areas can be merged is
