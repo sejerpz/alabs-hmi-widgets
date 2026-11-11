@@ -311,8 +311,12 @@ static void
 draw_bounce(Plugin* self, Showing* s, float speed, uint16_t stride, uint16_t width, uint16_t height)
 {
     const int ball = 4;
+    const float gravity = 0.35f;
     // the bottom of the area is the floor
     const float floor_y = height - ball;
+    // the kick that brings the ball back almost to the top of the area, whatever its height: a ball thrown up at
+    // v rises v^2 / (2 g), at any speed
+    const float kick = sqrtf(2.f * gravity * floor_y * 0.9f);
 
     if (s->ball_vx == 0.f) {
         // first frame of this showing
@@ -329,7 +333,7 @@ draw_bounce(Plugin* self, Showing* s, float speed, uint16_t stride, uint16_t wid
     s->trail_x[0] = (int16_t)s->ball_x;
     s->trail_y[0] = (int16_t)s->ball_y;
 
-    s->ball_vy += 0.35f * speed;
+    s->ball_vy += gravity * speed;
     s->ball_x += s->ball_vx * speed;
     s->ball_y += s->ball_vy * speed;
 
@@ -337,8 +341,13 @@ draw_bounce(Plugin* self, Showing* s, float speed, uint16_t stride, uint16_t wid
         s->ball_y = floor_y;
         // lose some energy, kick it again once it is almost still
         s->ball_vy = -s->ball_vy * 0.8f;
-        if (s->ball_vy > -1.5f)
-            s->ball_vy = -4.5f;
+        if (s->ball_vy > -kick / 3.f)
+            s->ball_vy = -kick;
+    }
+    // never above the top of the area, whatever the bounce left it with
+    if (s->ball_y < 0.f) {
+        s->ball_y = 0.f;
+        s->ball_vy = 0.f;
     }
     if (s->ball_x <= 0.f || s->ball_x >= width - ball) {
         s->ball_vx = -s->ball_vx;
@@ -430,14 +439,20 @@ draw_stars(Plugin* self, Showing* s, float speed, uint16_t stride, uint16_t widt
     const float cx = (width - 1) / 2.f;
     const float cy = (height - 1) / 2.f;
 
-    // a frame on the outermost pixels, to see the whole display is ours
-    for (int x = 0; x < width; ++x) {
-        set_pixel(self->bitmap, stride, width, height, x, 0);
-        set_pixel(self->bitmap, stride, width, height, x, height - 1);
-    }
-    for (int y = 0; y < height; ++y) {
-        set_pixel(self->bitmap, stride, width, height, 0, y);
-        set_pixel(self->bitmap, stride, width, height, width - 1, y);
+    // full screen, a frame on the outermost pixels shows the whole display is ours; in a smaller area there is
+    // nothing to prove and the stars use every pixel
+    const bool framed = width >= MAX_WIDTH && height >= MAX_HEIGHT;
+    const int margin = framed ? 1 : 0;
+
+    if (framed) {
+        for (int x = 0; x < width; ++x) {
+            set_pixel(self->bitmap, stride, width, height, x, 0);
+            set_pixel(self->bitmap, stride, width, height, x, height - 1);
+        }
+        for (int y = 0; y < height; ++y) {
+            set_pixel(self->bitmap, stride, width, height, 0, y);
+            set_pixel(self->bitmap, stride, width, height, width - 1, y);
+        }
     }
 
     for (int i = 0; i < STARS; ++i) {
@@ -455,10 +470,10 @@ draw_stars(Plugin* self, Showing* s, float speed, uint16_t stride, uint16_t widt
         const int x = (int)(cx + s->star_x[i] * cx * 0.25f / depth);
         const int y = (int)(cy + s->star_y[i] * cy * 0.25f / depth);
 
-        // the star size; nothing may touch the frame on the outermost pixels
+        // the star size; nothing may touch the frame, when there is one
         const int size = s->star_z[i] > 0.75f ? 3 : s->star_z[i] > 0.45f ? 2 : 1;
 
-        if (s->star_z[i] >= 1.f || x <= 0 || y <= 0 || x + size >= width - 1 || y + size >= height - 1) {
+        if (s->star_z[i] >= 1.f || x < margin || y < margin || x + size > width - margin || y + size > height - margin) {
             new_star(self, s, i);
             continue;
         }

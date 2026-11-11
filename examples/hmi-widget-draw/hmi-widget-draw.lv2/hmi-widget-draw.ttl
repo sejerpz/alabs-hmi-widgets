@@ -21,10 +21,11 @@ and its own animation at 25 frames per second. The natural sizes match the areas
   for a footer too
 - wave, natural 2 columns: an audio waveform scrolling to the left, as in an audio editor, with notes plucked
   at random
-- bounce, natural 3 columns: a ball bouncing on the bottom of the area, with a short trail
+- bounce, natural 3 columns: a ball bouncing on the bottom of the area, with a short trail; the bounces fit the
+  height of the area
 - loop, natural 1 column: a recorded loop drawn round a circle, turning under a playhead fixed at twelve o'clock,
   as on a looper; the part already played in the turn is drawn hollow
-- stars, natural full screen: stars flying towards you, inside a frame on the outermost pixels of the area
+- stars, natural full screen: stars flying towards you; full screen, inside a frame on the outermost pixels
 - bricks, full screen only: Bricks, a ball-and-paddle game, and a demo of partial updates. After the first full
   picture only what moves goes out on each frame: the ball, the paddle, the bricks hit, the score; gone bricks
   and the old ball are cleared without sending pixels. Where the ball hits the paddle sets its angle, it gets
