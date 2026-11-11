@@ -65,6 +65,7 @@ typedef enum {
     PARAMETER_SPEED = 0,
     PARAMETER_FIRE,     // the game: launches the ball on every flip of a plain switch, meant for a footswitch
     PARAMETER_MOVE,     // the game: where the paddle is, 0 left .. GAME_MOVE_STEPS right, meant for a knob
+    PARAMETER_ENABLED,  // lv2:enabled, driven by the host's bypass: off freezes every animation where it is
     PARAMETER_COUNT
 } Parameters;
 
@@ -99,6 +100,8 @@ typedef struct {
     int16_t trail_x[4], trail_y[4];
     // for widgets that never change: drawn once per showing
     bool drawn;
+    // anything sent since widget_shown: while frozen a showing is drawn once, as it is, and then left alone
+    bool painted;
     // the starfield: positions relative to the centre, depth 0 (far) .. 1 (here)
     float star_x[STARS], star_y[STARS], star_z[STARS];
     // a full screen frame is a lot of bytes: draw every other frame
@@ -864,11 +867,15 @@ draw_game(Plugin* self, Showing* s, uint16_t stride, uint16_t width, uint16_t he
 }
 
 static void
-draw_showing(Plugin* self, Showing* s, float speed)
+draw_showing(Plugin* self, Showing* s, float speed, bool frozen)
 {
     const uint16_t width = s->width < MAX_WIDTH ? s->width : MAX_WIDTH;
     const uint16_t height = s->height < MAX_HEIGHT ? s->height : MAX_HEIGHT;
     const uint16_t stride = (width + 7) / 8;
+
+    // frozen, what is on the display stays; only a showing that came into view since needs its picture
+    if (frozen && s->painted)
+        return;
 
     // a still picture goes out once after widget_shown and costs nothing afterwards
     if (s->kind == WIDGET_FILL) {
@@ -877,21 +884,28 @@ draw_showing(Plugin* self, Showing* s, float speed)
             self->hmi->draw_bitmap(self->hmi->handle, s->widget, 0, 0, width, height, self->bitmap);
             s->drawn = true;
         }
+        s->painted = true;
         return;
     }
 
     // a full screen frame is 1 KB on the wire, half the frame rate is plenty
-    if (s->kind == WIDGET_STARS && (s->frame++ & 1))
+    if (s->kind == WIDGET_STARS && !frozen && (s->frame++ & 1))
         return;
 
     // the game moves on once per frame, and only the place that moves it draws it, with partial updates
     if (s->kind == WIDGET_GAME) {
         if (s == self->game_showing) {
-            game_tick(self, &self->game, width, height);
+            if (!frozen)
+                game_tick(self, &self->game, width, height);
             draw_game(self, s, stride, width, height);
+            s->painted = true;
         }
         return;
     }
+
+    // speed 0 draws the animation where it is, without moving it on
+    if (frozen)
+        speed = 0.f;
 
     memset(self->bitmap, 0, stride * height);
 
@@ -920,6 +934,7 @@ draw_showing(Plugin* self, Showing* s, float speed)
 
     // the whole area every frame: simple, and always right after widget_shown
     self->hmi->draw_bitmap(self->hmi->handle, s->widget, 0, 0, width, height, self->bitmap);
+    s->painted = true;
 }
 
 static void
@@ -936,6 +951,12 @@ run(LV2_Handle instance, uint32_t n_samples)
     if ((fire > 0.5f) != (self->last_fire > 0.5f))
         self->fire_pending = true;
     self->last_fire = fire;
+
+    // bypassed, every animation stops where it is and comes back from there; a shot meanwhile is lost,
+    // not kept for when the plugin is enabled again
+    const bool frozen = *self->ports[PARAMETER_ENABLED] < 0.5f;
+    if (frozen)
+        self->fire_pending = false;
 
     self->sample_counter += n_samples;
 
@@ -959,7 +980,7 @@ run(LV2_Handle instance, uint32_t n_samples)
         Showing* s = &self->showings[i];
 
         if (__atomic_load_n(&s->widget, __ATOMIC_ACQUIRE) != NULL)
-            draw_showing(self, s, speed);
+            draw_showing(self, s, speed, frozen);
     }
 }
 
