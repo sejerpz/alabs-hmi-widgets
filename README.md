@@ -303,18 +303,21 @@ it does not draw, and where widgets are not supported it is simply never shown o
     may come later.
   - A device without `hmi_widget_areas` offers no widgets.
 - **More displays.** A device with more than one display, like the Duo X, lists them in `hmi_widget_displays`,
-  and each area names its display. Not implemented yet: the Duo X firmware that draws widgets is work in progress,
-  and mod-ui still reads the areas as one display.
+  and each area names its display. mod-ui reads them; the Duo X firmware that draws widgets is work in progress.
 
   ```jsonc
   {
       "hmi_widget_displays": [
           { "id": "left",  "name": "Left display",  "rect": [0, 0, 128, 64],
-            "controls": ["/hmi/knob1", "/hmi/potentiometer1", "/hmi/potentiometer2", "/hmi/potentiometer3",
-                         "/hmi/potentiometer4", "/hmi/footswitch1", "/hmi/footswitch2"] },
+            "controls": [["/hmi/knob1"],
+                         ["/hmi/potentiometer1", "/hmi/potentiometer3"],
+                         ["/hmi/potentiometer2", "/hmi/potentiometer4"],
+                         ["/hmi/footswitch1", "/hmi/footswitch2"]] },
           { "id": "right", "name": "Right display", "rect": [128, 0, 128, 64],
-            "controls": ["/hmi/knob2", "/hmi/potentiometer5", "/hmi/potentiometer6", "/hmi/potentiometer7",
-                         "/hmi/potentiometer8", "/hmi/footswitch3", "/hmi/footswitch4"] }
+            "controls": [["/hmi/knob2"],
+                         ["/hmi/potentiometer5", "/hmi/potentiometer7"],
+                         ["/hmi/potentiometer6", "/hmi/potentiometer8"],
+                         ["/hmi/footswitch3", "/hmi/footswitch4"]] }
       ],
       "hmi_widget_areas": [
           { "id": "l-knob1",     "display": "left", "name": "Knob 1",            "rect": [0, 25, 64, 16],
@@ -334,8 +337,9 @@ it does not draw, and where widgets are not supported it is simply never shown o
   ```
 
   - A display has an `id`, a `name` shown to the user, its `rect` on the device surface (the displays side by
-    side), an optional `pixel_format` (`hmi_widget_pixel_format` when missing) and the `controls` it shows, in the
-    order of the device.
+    side), an optional `pixel_format` (`hmi_widget_pixel_format` when missing) and the `controls` it shows: a list
+    of actuator URIs, or a list of rows of them as they sit under the display, which the Display dialog draws that
+    way. For the plan only which controls a display shows counts; their order is the order of the device.
   - The `rect` of an area is in the coordinates of its display, and an area never leaves it: no area spans two
     displays. A plugin that wants both shows a widget on each.
   - Without `hmi_widget_displays` the device has one display, as big as its areas: the Dwarf descriptor does not
