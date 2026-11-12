@@ -5,7 +5,8 @@ display of a device (HMI). It is implemented on the MOD Dwarf by the
 [aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images).
 
 The bundle `alabs-hmi-widgets.lv2` holds the specification (`alabs-hmi-widgets.ttl`) and the C header
-(`alabs-hmi-widgets.h`). The extension stands on its own: it does not need nor change the MOD HMI extension
+(`alabs-hmi-widgets.h`). To get started, [TUTORIAL.md](TUTORIAL.md) writes a small plugin with one widget and
+tries it on a desktop computer. The extension stands on its own: it does not need nor change the MOD HMI extension
 (`http://moddevices.com/ns/hmi`), and a plugin can use both.
 
 ## Overview
