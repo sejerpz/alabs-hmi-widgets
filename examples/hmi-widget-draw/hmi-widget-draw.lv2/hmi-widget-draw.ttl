@@ -82,7 +82,7 @@ FIRE and MOVE are the controls of the game.
         lv2:symbol "stars";
         lv2:name "Starfield";
         ahw:minWidth 32;
-        ahw:minHeight 32;
+        ahw:minHeight 24;
         ahw:naturalWidth 128;
         ahw:naturalHeight 64;
     ], [
