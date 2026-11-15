@@ -1,8 +1,9 @@
 # aLabs HMI Widgets
 
 An LV2 extension, `https://github.com/sejerpz/alabs-hmi-widgets`, that lets a plugin draw on areas of the
-display of a device (HMI). It is implemented on the MOD Dwarf by the
-[aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images).
+display of a device (HMI). It is implemented on the MOD Dwarf and the MOD Duo X by the Starless images
+(Starless 19 or later, [aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images)), and on desktop
+computers by [alabs-mod-desktop](https://github.com/sejerpz/mod-desktop).
 
 The bundle `alabs-hmi-widgets.lv2` holds the specification (`alabs-hmi-widgets.ttl`) and the C header
 (`alabs-hmi-widgets.h`). To get started, [TUTORIAL.md](TUTORIAL.md) writes a small plugin with one widget and
@@ -303,7 +304,7 @@ it does not draw, and where widgets are not supported it is simply never shown o
     may come later.
   - A device without `hmi_widget_areas` offers no widgets.
 - **More displays.** A device with more than one display, like the Duo X, lists them in `hmi_widget_displays`,
-  and each area names its display. mod-ui reads them; the Duo X firmware that draws widgets is work in progress.
+  and each area names its display. mod-ui reads them, and the Duo X firmware draws the widgets on both displays.
 
   ```jsonc
   {

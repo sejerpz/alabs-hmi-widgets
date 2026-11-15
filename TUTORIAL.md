@@ -15,17 +15,19 @@ It is useful whenever a plugin has something to show that a label and a value ca
 time, shapes, states. The knobs and footswitches keep working as usual: only what the display shows changes.
 
 > **Status: experimental.** The extension, its C API and the hardware descriptor keys may still change in
-> incompatible ways. It runs on the MOD Dwarf with the [aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images)
-> and on desktop computers with the mod-hw-emulator packages below. MOD Audio's stock firmware does not
+> incompatible ways. It runs on the MOD Dwarf and the MOD Duo X with the Starless images (Starless 19 or later,
+> [aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images)) and on desktop computers with the
+> alabs-mod-desktop packages below. MOD Audio's stock firmware does not
 > implement it: on other hosts a plugin with widgets works as usual, it is just never shown a widget.
 
 ## What you need
 
-- **mod-hw-emulator with MOD Desktop**, the package for Linux, Windows or macOS from
-  [sejerpz/mod-hw-emulator](https://github.com/sejerpz/mod-hw-emulator) (Releases, or built with
-  `scripts/package-*.sh`, see its README). It is MOD Desktop with mod-host and mod-ui supporting the widgets and an
-  emulated MOD Dwarf, running its real controller firmware. Plugins, pedalboards and settings go in `data/`, next
-  to `mhe-desktop.sh` (or `mhe-desktop.cmd` on Windows).
+- **alabs-mod-desktop**, the package for Linux, Windows or macOS from
+  [sejerpz/mod-desktop](https://github.com/sejerpz/mod-desktop) (Releases, or built from source, see
+  `utils/alabs/README.md`). It is MOD Desktop with mod-host and mod-ui supporting the widgets and an emulated
+  MOD Dwarf, Duo X or Duo, running its real controller firmware
+  ([mod-hw-emulator](https://github.com/sejerpz/mod-hw-emulator)). Plugins, pedalboards and settings go in
+  `data/`, next to `mhe-desktop.sh` (or `mhe-desktop.cmd` on Windows).
 - A C compiler and the LV2 headers (`lv2-dev` on Debian and Ubuntu).
 - This repository, for `alabs-hmi-widgets.lv2/alabs-hmi-widgets.h`.
 
@@ -228,15 +230,16 @@ On macOS `make LIB_EXT=.dylib`, on Windows `make CC=x86_64-w64-mingw32-gcc LIB_E
 Copy the bundle into the `lv2` folder of the package data, here with the package unpacked in your home folder:
 
 ```sh
-mkdir -p ~/mod-hw-emulator/data/lv2
-cp -r hmi-widget-meter.lv2 ~/mod-hw-emulator/data/lv2/
+mkdir -p ~/alabs-mod-desktop/data/lv2
+cp -r hmi-widget-meter.lv2 ~/alabs-mod-desktop/data/lv2/
 ```
 
 (with `--shared-data` the folder is `~/Documents/MOD Desktop/lv2`, the one of an installed MOD Desktop).
 
 ## Try it
 
-1. Start the package: `~/mod-hw-emulator/mhe-desktop.sh` (`mhe-desktop.cmd` on Windows). The emulated Dwarf opens
+1. Start the package: `~/alabs-mod-desktop/mhe-desktop.sh` (`mhe-desktop.cmd` on Windows; add `--device duox`,
+   or `-Device duox` on Windows, for a Duo X). The emulated Dwarf opens
    in its own window, then MOD Desktop. MOD Desktop reads the plugins when it starts: restart it after adding one.
 2. Open the pedalboard editor and add **HMI Widget Meter** between the capture and the playback.
 3. Open **Device ▸ Display**. The dialog lists the widgets of the pedalboard on one side and a drawing of the
