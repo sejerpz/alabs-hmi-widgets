@@ -1,9 +1,10 @@
 # aLabs HMI Widgets
 
 An LV2 extension, `https://github.com/sejerpz/alabs-hmi-widgets`, that lets a plugin draw on areas of the
-display of a device (HMI). It is implemented on the MOD Dwarf and the MOD Duo X by the Starless images
-(Starless 19 or later, [aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images)), and on desktop
-computers by [alabs-mod-desktop](https://github.com/sejerpz/mod-desktop).
+display of a device (HMI). It is implemented on the MOD Dwarf and the MOD Duo X (Starless 19 or later) and on the
+MOD Duo (Starless 20 or later) by the Starless images
+([aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images)), and on desktop computers by
+[alabs-mod-desktop](https://github.com/sejerpz/mod-desktop).
 
 The bundle `alabs-hmi-widgets.lv2` holds the specification (`alabs-hmi-widgets.ttl`) and the C header
 (`alabs-hmi-widgets.h`). To get started, [TUTORIAL.md](TUTORIAL.md) writes a small plugin with one widget and
@@ -105,16 +106,26 @@ about it.
   | Both footers | 128 × 8 |
   | Full screen | 128 × 64 |
 
-- To be offered in the same kind of place on both devices, a widget declares at most these minimums:
+  | Area on each display of the MOD Duo | Width × height (px) |
+  |---|---|
+  | Half of the knob band, left or right | 64 × 40 |
+  | The knob band | 128 × 40 |
+  | The footer, above the footswitch | 128 × 14 |
+  | Full screen | 128 × 64 |
 
-  | Place | Dwarf | Duo X | Minimum at most |
-  |---|---|---|---|
-  | One footer | 51 × 10 | 63 × 8 | 51 × 8 |
-  | Both footers | 104 × 10 | 128 × 8 | 104 × 8 |
-  | A column | 40 × 37 | 63 × 30 | 40 × 30 |
-  | Two columns | 82 × 37 | 128 × 30 | 82 × 30 |
-  | Three columns | 124 × 37 | 128 × 47 | 124 × 37 |
-  | Full screen | 128 × 64 | 128 × 64 | 128 × 64 |
+- To be offered in the same kind of place on every device, a widget declares at most these minimums:
+
+  | Place | Dwarf | Duo X | Duo | Minimum at most |
+  |---|---|---|---|---|
+  | One footer | 51 × 10 | 63 × 8 | 128 × 14 | 51 × 8 |
+  | Both footers | 104 × 10 | 128 × 8 | — | 104 × 8 |
+  | A column | 40 × 37 | 63 × 30 | 64 × 40 | 40 × 30 |
+  | Two columns | 82 × 37 | 128 × 30 | 128 × 40 | 82 × 30 |
+  | Three columns | 124 × 37 | 128 × 47 | 128 × 40 | 124 × 37 |
+  | Full screen | 128 × 64 | 128 × 64 | 128 × 64 | 128 × 64 |
+
+  The Duo has one footswitch per display, so no area spans two footers: a widget for both footers is offered
+  there in one footer (128 × 14), which is wider.
 
   The natural sizes of the Dwarf can stay as they are: the Duo X offers its closest area first, e.g. two knobs
   above each other (63 × 30) for a natural 40 × 37 and both footers (128 × 8) for a natural 104 × 10. The minimum
@@ -261,7 +272,7 @@ typedef struct {
 `ahw:WidgetDraw` is an optional feature. A plugin with widgets runs on every host: where the feature is missing
 it does not draw, and where widgets are not supported it is simply never shown one.
 
-## Reference implementation (MOD Dwarf, MOD Duo X)
+## Reference implementation (MOD Dwarf, MOD Duo X, MOD Duo)
 
 - **Geometry** comes from the hardware descriptor, extended with drop-in files merged by mod-ui
   (`/etc/mod-hardware-descriptor.d/*.json`), never hardcoded. It lists every area the device offers, the merged
@@ -303,8 +314,9 @@ it does not draw, and where widgets are not supported it is simply never shown o
   - The title band is not offered on its own for now; only `full` covers it. Areas dedicated to the title band
     may come later.
   - A device without `hmi_widget_areas` offers no widgets.
-- **More displays.** A device with more than one display, like the Duo X, lists them in `hmi_widget_displays`,
-  and each area names its display. mod-ui reads them, and the Duo X firmware draws the widgets on both displays.
+- **More displays.** A device with more than one display, like the Duo X and the Duo, lists them in
+  `hmi_widget_displays`, and each area names its display. mod-ui reads them, and the Duo X and Duo firmwares draw
+  the widgets on both displays.
 
   ```jsonc
   {
@@ -352,6 +364,10 @@ it does not draw, and where widgets are not supported it is simply never shown o
     15 areas per display, 30 in all: each knob, two knobs above each other or side by side, the four knobs, the
     endless knob band, the band with the four knobs, each footer, both footers and the full screen. The endless
     knob band is one cell, like the one control under it: it is either all in view or all covered.
+  - On the Duo each display shows one knob and one footswitch, and offers four cells: the title band (only under
+    the full screen), the two halves of the knob band and the footer. They make 5 areas per display, 10 in all:
+    each half, the whole knob band, the footer and the full screen. A widget on one half leaves the other half to
+    the knob, drawn small beside it as on the Dwarf.
 - **mod-ui** has a *Display* dialog (Device menu) that starts from the widgets:
   - On one side the widgets of the pedalboard, each with where it is placed (page, subpage, area) and how many of
     its suggested ports are bound. On the other the page and subpage in view: a drawing of the display with its
@@ -390,7 +406,7 @@ it does not draw, and where widgets are not supported it is simply never shown o
   contiguous controls within one row; a group longer than a row fills whole rows and the rest takes a contiguous run
   in a following row. Switch ports go to knobs only when no switch is free on any page. With more displays each
   display has its rows, made of the controls it shows: on the Duo X the endless knob and four knobs, and two
-  buttons, per display and page. Within a page the rows of the widget's display come first.
+  buttons, per display and page; on the Duo one knob and one footswitch. Within a page the rows of the widget's display come first.
 
   1. The widget goes to the first page with a free area it fits in, where every group of ports also finds
      contiguous free controls on that page.
@@ -413,8 +429,9 @@ it does not draw, and where widgets are not supported it is simply never shown o
 - **Controller firmware** keeps a 1-bit backing buffer for each visible area only, so popups, overlays and the
   tuner can cover an area and give it back without asking the plugin. It converts rows to the display's page
   layout itself, with any `x` and `y`. Areas leaving the view drop their pixels; the plugin redraws on the next
-  `widget_shown()`. On the Duo X a tool (menu, tuner, banks) takes one display: the widgets of that display are
-  hidden, those of the other one stay.
+  `widget_shown()`. On the Duo X and the Duo a tool (menu, tuner, banks) takes one display: the widgets of that
+  display are hidden, those of the other one stay. On the Duo the system serial line is a spare UART of the
+  controller, wired to a UART of the SoC that the Starless image enables in the device tree.
 
 ### Saving the layout with a pedalboard
 

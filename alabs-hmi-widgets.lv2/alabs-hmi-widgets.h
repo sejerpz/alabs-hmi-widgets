@@ -17,7 +17,7 @@
 
 /**
    @file alabs-hmi-widgets.h
-   C header for plugin widgets drawn on the display of a device (HMI), as used on the MOD Dwarf by aLabs images.
+   C header for plugin widgets drawn on the display of a device (HMI), as used on the MOD Dwarf, Duo X and Duo by aLabs images.
 */
 
 #ifndef ALABS_HMI_WIDGETS_H_INCLUDED

@@ -15,8 +15,9 @@ It is useful whenever a plugin has something to show that a label and a value ca
 time, shapes, states. The knobs and footswitches keep working as usual: only what the display shows changes.
 
 > **Status: experimental.** The extension, its C API and the hardware descriptor keys may still change in
-> incompatible ways. It runs on the MOD Dwarf and the MOD Duo X with the Starless images (Starless 19 or later,
-> [aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images)) and on desktop computers with the
+> incompatible ways. It runs on the MOD Dwarf and the MOD Duo X (Starless 19 or later) and on the MOD Duo
+> (Starless 20 or later) with the Starless images
+> ([aLabs custom images](https://github.com/sejerpz/alabs-mod-custom-images)) and on desktop computers with the
 > alabs-mod-desktop packages below. MOD Audio's stock firmware does not
 > implement it: on other hosts a plugin with widgets works as usual, it is just never shown a widget.
 
@@ -65,7 +66,8 @@ In the TTL of the plugin, next to the usual ports:
 
 - `ahw:WidgetDraw` is an **optional** feature: without it the plugin still loads, it just does not draw.
 - `ahw:minWidth`, `ahw:minHeight` are a limit: the host only offers the widget in areas at least that big. With 16 × 8
-  the meter fits everywhere, including the footers of the Dwarf (51 × 10) and of the Duo X (63 × 8).
+  the meter fits everywhere, including the footers of the Dwarf (51 × 10), of the Duo X (63 × 8) and of the Duo
+  (128 × 14).
 - `ahw:naturalWidth`, `ahw:naturalHeight` are a wish: the host offers the closest area first. 40 × 37 is a column
   above a knob of the Dwarf.
 - `ahw:suggestedPorts` is optional too: when the user places the meter, the host offers to bind `gain` to a free knob.
@@ -241,6 +243,7 @@ cp -r hmi-widget-meter.lv2 ~/alabs-mod-desktop/data/lv2/
 1. Start the package: `~/alabs-mod-desktop/mhe-desktop.sh` (`mhe-desktop.cmd` on Windows; add `--device duox`,
    or `-Device duox` on Windows, for a Duo X). The emulated Dwarf opens
    in its own window, then MOD Desktop. MOD Desktop reads the plugins when it starts: restart it after adding one.
+   The emulated Duo does not show widgets yet: the emulator has no system line for it, try them on a real Duo.
 2. Open the pedalboard editor and add **HMI Widget Meter** between the capture and the playback.
 3. Open **Device ▸ Display**. The dialog lists the widgets of the pedalboard on one side and a drawing of the
    display on the other.
@@ -259,6 +262,6 @@ host offers the full screen first. [`examples/hmi-widget-draw`](examples/hmi-wid
 brick game on the full screen. The game sends only the parts that move with partial `draw_bitmap()` calls, and binds
 its controls through `ahw:suggestedPorts`.
 
-The [specification](README.md) covers the rest: all the areas of the Dwarf and of the Duo X with their sizes, how
-to choose a minimum that works on both, the rules of the suggested bindings, the threading contract, how the layout
+The [specification](README.md) covers the rest: all the areas of the Dwarf, the Duo X and the Duo with their
+sizes, how to choose a minimum that works on all of them, the rules of the suggested bindings, the threading contract, how the layout
 is saved with the pedalboard, and the other pixel formats reserved for colour displays.
